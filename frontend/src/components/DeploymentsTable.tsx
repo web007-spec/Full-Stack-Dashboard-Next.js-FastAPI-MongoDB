@@ -2,6 +2,7 @@
 
 import type { Deployment, SortField, SortOrder } from '@/lib/api'
 import { usePatchDeployment } from '@/hooks/usePatchDeployment'
+import { useDeleteDeployment, useRestoreDeployment } from '@/hooks/useDeploymentLifecycle'
 import { InlineEdit } from './InlineEdit'
 import { StatusBadge } from './StatusBadge'
 
@@ -39,6 +40,8 @@ function SortIndicator({ active, order }: { active: boolean; order: SortOrder })
 
 export function DeploymentsTable({ items, isFetching, isError, sort, order, onSort, onSelect }: Props) {
   const { mutate: patch } = usePatchDeployment()
+  const { mutate: del } = useDeleteDeployment()
+  const { mutate: restore } = useRestoreDeployment()
 
   if (isError) {
     return (
@@ -75,7 +78,7 @@ export function DeploymentsTable({ items, isFetching, isError, sort, order, onSo
             </tr>
           )}
           {items.map((d) => (
-            <tr key={d.deployment_id} className={`hover:bg-gray-50 ${d.deleted_at ? 'opacity-50' : ''}`}>
+            <tr key={d.deployment_id} className={`hover:bg-gray-50 ${d.deleted_at ? 'bg-red-50/30' : ''}`}>
               <td className="px-4 py-3 max-w-[220px]">
                 <div className="font-medium text-gray-900">
                   <InlineEdit
@@ -105,12 +108,29 @@ export function DeploymentsTable({ items, isFetching, isError, sort, order, onSo
                 {new Date(d.created_at).toLocaleDateString()}
               </td>
               <td className="px-4 py-3">
-                <button
-                  onClick={() => onSelect(d)}
-                  className="text-xs text-blue-600 hover:underline whitespace-nowrap"
-                >
-                  Details
-                </button>
+                <div className="flex items-center gap-3 whitespace-nowrap">
+                  <button
+                    onClick={() => onSelect(d)}
+                    className="text-xs text-blue-600 hover:underline"
+                  >
+                    Details
+                  </button>
+                  {d.deleted_at ? (
+                    <button
+                      onClick={() => restore(d.deployment_id)}
+                      className="text-xs text-green-600 hover:underline"
+                    >
+                      Restore
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => del(d.deployment_id)}
+                      className="text-xs text-red-400 hover:text-red-600 hover:underline"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
               </td>
             </tr>
           ))}

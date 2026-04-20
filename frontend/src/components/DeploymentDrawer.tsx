@@ -3,6 +3,7 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import { useDeploymentDetail } from '@/hooks/useDeploymentDetail'
 import { useDeleteAttribute, useUpsertAttribute } from '@/hooks/useAttributeMutations'
+import { useDeleteDeployment, useRestoreDeployment } from '@/hooks/useDeploymentLifecycle'
 import { InlineEdit } from './InlineEdit'
 import { StatusBadge } from './StatusBadge'
 
@@ -24,6 +25,8 @@ export function DeploymentDrawer({ deploymentId, onClose }: Props) {
   const { data: deployment, isLoading } = useDeploymentDetail(deploymentId)
   const { mutate: upsert } = useUpsertAttribute()
   const { mutate: deleteAttr } = useDeleteAttribute()
+  const { mutate: del } = useDeleteDeployment()
+  const { mutate: restore } = useRestoreDeployment()
   const [newKey, setNewKey] = useState('')
   const [newValue, setNewValue] = useState('')
 
@@ -94,6 +97,26 @@ export function DeploymentDrawer({ deploymentId, onClose }: Props) {
                   <MetaRow label="Deleted at">
                     <span className="text-red-500">{new Date(deployment.deleted_at).toLocaleString()}</span>
                   </MetaRow>
+                )}
+              </section>
+
+              {/* Actions */}
+              <section>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Actions</h3>
+                {deployment.deleted_at ? (
+                  <button
+                    onClick={() => restore(deployment.deployment_id)}
+                    className="rounded border border-green-300 px-4 py-2 text-sm text-green-700 hover:bg-green-50"
+                  >
+                    Restore deployment
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { del(deployment.deployment_id); onClose() }}
+                    className="rounded border border-red-300 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                  >
+                    Delete deployment
+                  </button>
                 )}
               </section>
 
