@@ -5,11 +5,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.db import mongodb
+from app.db.indexes import ensure_indexes
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await mongodb.connect()
+    await ensure_indexes(mongodb.get_db())
     yield
     await mongodb.disconnect()
 
