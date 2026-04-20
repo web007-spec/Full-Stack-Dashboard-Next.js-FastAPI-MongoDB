@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.db.mongodb import get_db
 from app.models.deployment import (
     DeploymentEnvironment,
     DeploymentListResponse,
+    DeploymentResponse,
     DeploymentStatus,
     DeploymentType,
+    PatchDeploymentRequest,
 )
 from app.services import deployments as svc
 
@@ -38,3 +40,37 @@ async def list_deployments(
         limit=limit,
         include_deleted=include_deleted,
     )
+
+
+@router.get("/{deployment_id}", response_model=DeploymentResponse)
+async def get_deployment(
+    deployment_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+) -> DeploymentResponse:
+    return await svc.get_deployment(db, deployment_id)
+
+
+@router.patch("/{deployment_id}", response_model=DeploymentResponse)
+async def patch_deployment(
+    deployment_id: str,
+    body: PatchDeploymentRequest,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+) -> DeploymentResponse:
+    return await svc.patch_deployment(db, deployment_id, body)
+
+
+@router.delete("/{deployment_id}", status_code=204)
+async def delete_deployment(
+    deployment_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+) -> Response:
+    await svc.delete_deployment(db, deployment_id)
+    return Response(status_code=204)
+
+
+@router.post("/{deployment_id}/restore", response_model=DeploymentResponse)
+async def restore_deployment(
+    deployment_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+) -> DeploymentResponse:
+    return await svc.restore_deployment(db, deployment_id)
