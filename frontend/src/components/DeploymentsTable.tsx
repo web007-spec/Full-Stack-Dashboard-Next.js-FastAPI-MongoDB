@@ -1,6 +1,8 @@
 'use client'
 
 import type { Deployment, SortField, SortOrder } from '@/lib/api'
+import { usePatchDeployment } from '@/hooks/usePatchDeployment'
+import { InlineEdit } from './InlineEdit'
 import { StatusBadge } from './StatusBadge'
 
 interface Column {
@@ -36,6 +38,8 @@ function SortIndicator({ active, order }: { active: boolean; order: SortOrder })
 }
 
 export function DeploymentsTable({ items, isFetching, isError, sort, order, onSort, onSelect }: Props) {
+  const { mutate: patch } = usePatchDeployment()
+
   if (isError) {
     return (
       <p className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -71,12 +75,23 @@ export function DeploymentsTable({ items, isFetching, isError, sort, order, onSo
             </tr>
           )}
           {items.map((d) => (
-            <tr
-              key={d.deployment_id}
-              className={`hover:bg-gray-50 ${d.deleted_at ? 'opacity-50' : ''}`}
-            >
-              <td className="px-4 py-3 font-medium text-gray-900 max-w-[200px] truncate">
-                {d.attributes.name ?? '—'}
+            <tr key={d.deployment_id} className={`hover:bg-gray-50 ${d.deleted_at ? 'opacity-50' : ''}`}>
+              <td className="px-4 py-3 max-w-[220px]">
+                <div className="font-medium text-gray-900">
+                  <InlineEdit
+                    value={d.attributes.name ?? ''}
+                    placeholder="Unnamed"
+                    onSave={(v) => v && patch({ id: d.deployment_id, body: { name: v } })}
+                  />
+                </div>
+                <div className="mt-0.5 text-xs text-gray-400">
+                  <InlineEdit
+                    value={d.attributes.description ?? ''}
+                    placeholder="Add description…"
+                    textClassName="text-xs"
+                    onSave={(v) => v && patch({ id: d.deployment_id, body: { description: v } })}
+                  />
+                </div>
               </td>
               <td className="px-4 py-3 text-gray-600">{d.version}</td>
               <td className="px-4 py-3"><StatusBadge value={d.status} /></td>
