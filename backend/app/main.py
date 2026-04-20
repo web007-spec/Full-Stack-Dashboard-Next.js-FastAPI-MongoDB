@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.deployments import router as deployments_router
 from app.core.config import settings
 from app.db import mongodb
 from app.db.indexes import ensure_indexes
@@ -24,6 +25,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(deployments_router)
 
 
 @app.get("/health")
