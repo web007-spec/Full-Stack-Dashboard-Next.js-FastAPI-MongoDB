@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, Path, Query, Response
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.db.mongodb import get_db
 from app.models.deployment import (
+    AttributeUpsertRequest,
     DeploymentEnvironment,
     DeploymentListResponse,
     DeploymentResponse,
@@ -74,3 +75,26 @@ async def restore_deployment(
     db: AsyncIOMotorDatabase = Depends(get_db),
 ) -> DeploymentResponse:
     return await svc.restore_deployment(db, deployment_id)
+
+
+# Key pattern: no dots (prevents dot-notation injection) and no leading $
+_KEY_PATTERN = r"^[^.$][^.]*$"
+
+
+@router.put("/{deployment_id}/attributes/{key}", response_model=DeploymentResponse)
+async def upsert_attribute(
+    deployment_id: str,
+    key: str = Path(..., pattern=_KEY_PATTERN),
+    body: AttributeUpsertRequest = ...,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+) -> DeploymentResponse:
+    return await svc.upsert_attribute(db, deployment_id, key, body.value)
+
+
+@router.delete("/{deployment_id}/attributes/{key}", response_model=DeploymentResponse)
+async def delete_attribute(
+    deployment_id: str,
+    key: str = Path(..., pattern=_KEY_PATTERN),
+    db: AsyncIOMotorDatabase = Depends(get_db),
+) -> DeploymentResponse:
+    return await svc.delete_attribute(db, deployment_id, key)

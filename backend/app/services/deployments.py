@@ -156,3 +156,39 @@ async def restore_deployment(
         # Either doesn't exist or isn't deleted — both are 404 from the client's view
         raise _not_found(deployment_id)
     return _doc_to_response(doc)
+
+
+async def upsert_attribute(
+    db: AsyncIOMotorDatabase,
+    deployment_id: str,
+    key: str,
+    value: str,
+) -> DeploymentResponse:
+    doc = await db["deployments"].find_one_and_update(
+        {"deployment_id": deployment_id, "deleted_at": None},
+        {"$set": {f"attributes.{key}": value, "updated_at": datetime.now(timezone.utc)}},
+        projection={"_id": 0},
+        return_document=ReturnDocument.AFTER,
+    )
+    if doc is None:
+        raise _not_found(deployment_id)
+    return _doc_to_response(doc)
+
+
+async def delete_attribute(
+    db: AsyncIOMotorDatabase,
+    deployment_id: str,
+    key: str,
+) -> DeploymentResponse:
+    doc = await db["deployments"].find_one_and_update(
+        {"deployment_id": deployment_id, "deleted_at": None},
+        {
+            "$unset": {f"attributes.{key}": ""},
+            "$set": {"updated_at": datetime.now(timezone.utc)},
+        },
+        projection={"_id": 0},
+        return_document=ReturnDocument.AFTER,
+    )
+    if doc is None:
+        raise _not_found(deployment_id)
+    return _doc_to_response(doc)
